@@ -1,4 +1,4 @@
-# PregelPlus
+# PregelPlus: A Distributed Graph Computing Framework with Effective Message Reduction
 
 Pregel+ is not just another open-source Pregel implementation, but a substantially improved distributed graph computing system with effective message reduction. Compared with existing Pregel-like systems, Pregel+ provides simpler programming interface and yet achieves higher computational efficiency. We give ample examples and detailed tutorials to demonstrate how to program in Pregel+ and deploy Pregel+ in a distributed environment. Pregel+ is also a better choice for researchers who want to change the system to support new functionalities, as the design of Pregel+ is much simpler and more flexible than most other Pregel-like systems.
 
