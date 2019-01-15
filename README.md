@@ -5,7 +5,7 @@ Pregel+ is not just another open-source Pregel implementation, but a substantial
 Pregel+ supports two effective message reduction techniques: (1)vertex mirroring and (2)a new request-respond paradigm. These techniques not only reduce the total number of messages exchanged through the network, but also bound the number of messages sent/received by any vertex, especially for processing power-law graphs and (relatively) dense graphs.
 
 ## Project Website
-[http://www.cse.cuhk.edu.hk/pregelplus/](http://www.cse.cuhk.edu.hk/pregelplus/)
+[http://www.cse.cuhk.edu.hk/pregelplus/](http://www.cse.cuhk.edu.hk/pregelplus/index.html)
 
 ## License
 
