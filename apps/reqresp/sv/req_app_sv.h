@@ -263,7 +263,7 @@ class SVWorker_req:public RWorker<SVVertex_req, SVAgg_req>
 	char buf[100];
 
 	public:
-
+  // vid \t num v1 v2 v3
 	virtual SVVertex_req* toVertex(char* line)
 	{
 		char * pch;

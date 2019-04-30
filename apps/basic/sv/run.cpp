@@ -2,7 +2,7 @@
 
 int main(int argc, char* argv[]){
 	init_workers();
-	pregel_sv("/sv", "/sv_out");
+	pregel_sv("/home/naughtycat/PregelPlus/data/toy	1", "/home/naughtycat/PregelPlus/data/toy_sv");
 	worker_finalize();
 	return 0;
 }

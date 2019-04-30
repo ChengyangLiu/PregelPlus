@@ -3,7 +3,12 @@
 
 //if "prefix sum" is activated, content is prefixed with "orderID "
 
+#ifdef HDFS
 #include "ydhdfs.h"
+#else
+#include "../utils/ydio.h"
+#endif
+
 #include "global.h"
 #include "serialization.h"
 #include "communication.h"
@@ -70,6 +75,7 @@ public:
         add_vertex(v);
     }
 
+#ifdef HDFS
     void load_graph(const char* inpath)
     {
         hdfsFS fs = getHdfsFS();
@@ -86,6 +92,24 @@ public:
         hdfsDisconnect(fs);
         //cout<<"Worker "<<_my_rank<<": \""<<inpath<<"\" loaded"<<endl;//DEBUG !!!!!!!!!!
     }
+#else
+    void load_graph(const char* inpath)
+    {
+      cout << "[Worker" << _my_rank << "]: Loading graph from " << inpath << "\n";
+      string line;
+      try {
+        ifstream fin(inpath);
+        while (getline(fin, line)) {
+          char* cp = &line[0u];
+          load_vertex(toVertex(cp));
+        }
+        fin.close();
+      } catch (exception& e) {
+        fprintf(stderr, "Failed to load graph: %s!\n", inpath);
+    		exit(-1);
+      }
+    }
+#endif
     //=======================================================
 
     //user-defined graphDumper ==============================
@@ -98,6 +122,7 @@ public:
         buf.insert(buf.end(), content, content + len);
     }
 
+#ifdef HDFS
     void dump_partition(const char* outpath)
     {
         hdfsFS fs = getHdfsFS();
@@ -129,6 +154,17 @@ public:
         hdfsCloseFile(fs, hdl);
         hdfsDisconnect(fs);
     }
+#else
+    void dump_partition(const char* outpath)
+    {
+      BufferedWriter* writer = new BufferedWriter(outpath, _my_rank);
+      for (int i = 0; i < vertexes.size(); i++) {
+        VertexT* v = vertexes[i];
+        toline(v);
+      }
+      delete writer;
+    }
+#endif
     //=======================================================
 
     void key_sampling(vector<T>& splits) //key<=splits[i], to machine i
@@ -287,8 +323,10 @@ public:
     {
         //check path + init
         if (_my_rank == MASTER_RANK) {
+#ifdef HDFS
             if (dirCheck(params.input_path.c_str(), params.output_path.c_str(), _my_rank == MASTER_RANK, params.force_write) == -1)
                 exit(-1);
+#endif
         }
         init_timers();
 
@@ -296,7 +334,11 @@ public:
         ResetTimer(WORKER_TIMER);
         vector<vector<string> >* arrangement;
         if (_my_rank == MASTER_RANK) {
+#ifdef HDFS
             arrangement = params.native_dispatcher ? dispatchLocality(params.input_path.c_str()) : dispatchRan(params.input_path.c_str());
+#else
+            arrangement = dispatch(params.input_path.c_str());
+#endif
             //reportAssignment(arrangement);//DEBUG !!!!!!!!!!
             masterScatter(*arrangement);
             vector<string>& assignedSplits = (*arrangement)[0];

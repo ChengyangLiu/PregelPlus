@@ -334,7 +334,7 @@ class SVWorker_pregel:public Worker<SVVertex_pregel, SVAgg_pregel>
 	char buf[100];
 
 	public:
-
+	// vid \t num v1 v2 v3
 	virtual SVVertex_pregel* toVertex(char* line)
 	{
 		char * pch;

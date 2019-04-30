@@ -73,6 +73,7 @@ class CCWorker_pregel:public Worker<CCVertex_pregel>
 
 	public:
 		//C version
+		// vid \t num v1 v2 v3
 		virtual CCVertex_pregel* toVertex(char* line)
 		{
 			char * pch;

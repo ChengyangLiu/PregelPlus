@@ -3,7 +3,7 @@
 int main(int argc, char* argv[]){
 	init_workers();
 	bool directed=false;
-	pregel_fieldbcast("/toyFolder", "/toyOutput", directed);
+	pregel_fieldbcast("/home/naughtycat/PregelPlus/data/toy	1", "/home/naughtycat/PregelPlus/data/toy_fieldbcast", directed);
 	worker_finalize();
 	return 0;
 }

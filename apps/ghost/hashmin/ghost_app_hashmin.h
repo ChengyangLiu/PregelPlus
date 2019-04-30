@@ -30,7 +30,7 @@ class CCVertex_ghost: public GVertex<VertexID, VertexID, VertexID> {
 class CCWorker_ghost: public GWorker<CCVertex_ghost> {
 	char buf[100];
 	public:
-
+    // vid \t num v1 v2 v3
 		virtual CCVertex_ghost* toVertex(char* line) {
 			char * pch;
 			pch = strtok(line, "\t");

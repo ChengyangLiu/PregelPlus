@@ -89,7 +89,7 @@ class PRWorker_pregel:public Worker<PRVertex_pregel, PRAgg_pregel>
 {
 	char buf[100];
 	public:
-
+		// vid \t num v1 v2 v3
 		virtual PRVertex_pregel* toVertex(char* line)
 		{
 			char * pch;

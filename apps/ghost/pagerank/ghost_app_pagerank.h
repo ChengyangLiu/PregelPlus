@@ -86,7 +86,7 @@ class PRWorker_ghost:public GWorker<PRVertex_ghost, PRAgg_ghost>
 {
 	char buf[100];
 	public:
-
+    // vid \t num v1 v2 v3
 		virtual PRVertex_ghost* toVertex(char* line)
 		{
 			char * pch;

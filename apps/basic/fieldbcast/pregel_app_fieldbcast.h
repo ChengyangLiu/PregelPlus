@@ -100,6 +100,7 @@ class FieldWorker_pregel: public Worker<FieldVertex_pregel>
 
 public:
 	//C version
+	// vid \t num v1 v2 v3
 	virtual FieldVertex_pregel* toVertex(char* line)
 	{
 		char * pch;
@@ -144,4 +145,3 @@ void pregel_fieldbcast(string in_path, string out_path, bool directed = true)
 	FieldWorker_pregel worker;
 	worker.run(param);
 }
-

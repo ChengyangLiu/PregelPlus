@@ -137,6 +137,7 @@ class SPWorker_pregel:public Worker<SPVertex_pregel>
 	public:
 
 		//input line:
+		// vid \t v1 v2 v3
 		virtual SPVertex_pregel* toVertex(char* line)
 		{
 			char * pch;
