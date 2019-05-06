@@ -90,12 +90,19 @@ public:
 			v->value().dist = DBL_MAX;
 			v->vote_to_halt();
 		}
+		// filter vlabel
+		pch=strtok(NULL, "\t");
+
 		EdgeContainer & edges = v->neighbors();
-		while(pch = strtok(NULL, " "))
+		pch=strtok(NULL, "\t");
+		int num=atoi(pch);
+		for(int i=0; i<num; i++)
 		{
 			EdgeT edge;
+			pch=strtok(NULL, "\t");
 			edge.id = atoi(pch);
-			edge.eval = 1;
+			pch=strtok(NULL, "\t");
+			edge.eval = atof(pch);
 			edges.push_back(edge);
 		}
 		return v;

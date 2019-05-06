@@ -137,7 +137,8 @@ class SPWorker_pregel:public Worker<SPVertex_pregel>
 	public:
 
 		//input line:
-		// vid \t v1 v2 v3
+		// seperate with "\t"
+		// vid	vl	N	v1	el1	v2	el2	...
 		virtual SPVertex_pregel* toVertex(char* line)
 		{
 			char * pch;
@@ -152,10 +153,18 @@ class SPWorker_pregel:public Worker<SPVertex_pregel>
 				v->value().dist=DBL_MAX;
 				v->vote_to_halt();
 			}
-			while(pch=strtok(NULL, " "))
+			// filter vlabel
+			pch=strtok(NULL, "\t");
+
+			pch=strtok(NULL, "\t");
+			int num=atoi(pch);
+			for(int i=0; i<num; i++)
 			{
+				pch=strtok(NULL, "\t");
 				int nb=atoi(pch);
-				double len=1;
+				pch=strtok(NULL, "\t");
+				double len=atof(pch);
+				// cout << id << "," << nb << "," << len << "\n"; //test
 				SPEdge_pregel edge={len, nb};
 				v->value().edges.push_back(edge);
 			}
