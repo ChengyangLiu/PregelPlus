@@ -2,9 +2,11 @@ CCOMPILE=mpic++ -std=c++11
 
 #HADOOP_HOME= [path]
 #JAVA_HOME= [path]
-CPPFLAGS= -I$(HADOOP_HOME)/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -I/home/naughtycat/PregelPlus/system  -Wno-deprecated -O2
+SYSTEM_PATH=/home/naughtycat/PregelPlus/system
 
-CPPFLAGS_N= -I/home/naughtycat/PregelPlus/system  -Wno-deprecated -O2
+CPPFLAGS= -I$(HADOOP_HOME)/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -I$(SYSTEM_PATH)  -Wno-deprecated -O2
+CPPFLAGS_N= -I$(SYSTEM_PATH)  -Wno-deprecated -O2
+
 LIB = -L$(HADOOP_HOME)/lib/native
 LDFLAGS = -lhdfs
 

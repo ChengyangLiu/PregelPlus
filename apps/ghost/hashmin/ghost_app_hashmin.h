@@ -30,22 +30,25 @@ class CCVertex_ghost: public GVertex<VertexID, VertexID, VertexID> {
 class CCWorker_ghost: public GWorker<CCVertex_ghost> {
 	char buf[100];
 	public:
-    // vid \t num v1 v2 v3
+		// seperate with "\t"
+		// vid	vl	N	v1	el1	v2	el2	...
 		virtual CCVertex_ghost* toVertex(char* line) {
 			char * pch;
 			pch = strtok(line, "\t");
 			CCVertex_ghost* v = new CCVertex_ghost;
 			v->id = atoi(pch);
-			pch = strtok(NULL, " ");
+			pch=strtok(NULL, "\t"); //filter vlabel
+			pch = strtok(NULL, "\t");
 			int num = atoi(pch);
 			EdgeContainer & edges = v->neighbors();
 			VertexID min = v->id;
 			for (int i = 0; i < num; i++) {
-				pch = strtok(NULL, " ");
+				pch = strtok(NULL, "\t");
 				EdgeT edge;
 				edge.id = atoi(pch);
 				if(edge.id < min) min = edge.id;
 				edges.push_back(edge);
+				pch=strtok(NULL, "\t"); //filter elabel
 			}
 			v->value() = min;
 			return v;

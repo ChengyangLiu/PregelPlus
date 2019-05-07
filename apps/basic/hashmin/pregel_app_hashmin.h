@@ -73,19 +73,22 @@ class CCWorker_pregel:public Worker<CCVertex_pregel>
 
 	public:
 		//C version
-		// vid \t num v1 v2 v3
+		// seperate with "\t"
+		// vid	vl	N	v1	el1	v2	el2	...
 		virtual CCVertex_pregel* toVertex(char* line)
 		{
 			char * pch;
 			pch=strtok(line, "\t");
 			CCVertex_pregel* v=new CCVertex_pregel;
 			v->id=atoi(pch);
-			pch=strtok(NULL, " ");
+			pch=strtok(NULL, "\t"); //filter vlabel
+			pch=strtok(NULL, "\t");
 			int num=atoi(pch);
 			for(int i=0; i<num; i++)
 			{
-				pch=strtok(NULL, " ");
+				pch=strtok(NULL, "\t");
 				v->value().edges.push_back(atoi(pch));
+				pch=strtok(NULL, "\t"); //filter elabel
 			}
 			return v;
 		}

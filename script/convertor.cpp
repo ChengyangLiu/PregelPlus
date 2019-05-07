@@ -10,7 +10,13 @@
 #include <string>
 #include <vector>
 
+#include "mpi.h"
+
 using namespace std;
+
+int my_rank = 0, comm_sz = 0;
+
+map<long, int> v_parts;
 
 /* vertex of a graph */
 class Vertex {
@@ -22,7 +28,7 @@ class Vertex {
 
   Vertex(long id) : _id(id) {}
 
-  void addLabel(long label) { _label = label; }
+  inline void addLabel(long label) { _label = label; }
 
   inline long id() { return _id; }
   inline long label() { return _label; }
@@ -38,77 +44,86 @@ class Node {
   Node() {}
   ~Node() {}
 
-  Node(Vertex& vertex) { _vertex = vertex; }
+  Node(Vertex& vertex) : _vertex(vertex) {}
 
   /* add a neighborhood vertex to an exist vertex */
-  void addNeighbor(Vertex* neighbor, long elabel) {
+  inline void addNeighbor(long neighbor, long elabel) {
     _neighbors.emplace_back(neighbor);
     _elabels.emplace_back(elabel);
   }
 
   inline Vertex& v() { return _vertex; }
-  inline vector<Vertex*>& neighbors() { return _neighbors; }
+  inline vector<long>& neighbors() { return _neighbors; }
   inline vector<long>& elabels() { return _elabels; }
 
  private:
   Vertex _vertex;              // source
-  vector<Vertex*> _neighbors;  // destinations
+  vector<long> _neighbors;  // destinations
   vector<long> _elabels;       // labels
 };
-class Graph;
-map<int, Graph> gmap;
-map<long, int> v_parts;
 
 /* class graph */
 class Graph {
  public:
   Graph() : _num(0) {}
-  Graph(long gid) : _num(0), _gid(gid) {}
   ~Graph() {}
 
-  void addVertex(long id) {
-    Vertex v(id);
-    Node node(v);
-    _nodes.emplace_back(node);
-    _vid_map[id] = _num++;
-  }
+  /* load graph */
+  void loadGraph(string& filename, int partnum) {
+    string rfile = filename + ".part" + to_string(partnum);
+    string vfile = filename + ".v";
+    string efile = filename + ".e";
 
-  void updateVInfo(long id, long label) {
-    Node* node = Graph::node(id);
-    if (node == NULL) {
-      cout << "src id is not existed in its fragment when updating!\n";
-      exit(-1);
-    }
-    node->v().addLabel(label);
-  }
-
-  // addEdge must be called after addVertex
-  void addEdge(long src, long dst, long label) {
-    Node* src_node = Graph::node(src);
-    if (src_node == NULL) {
-      cout << "src id is not existed in its fragment when adding edge!\n";
-      exit(-1);
-    }
-    Node* dst_node = Graph::node(dst);
-    if (dst_node == NULL) {
-      // cout << "[warning]: " << dst << " is in anothor fragment," << src <<
-      // "\n";
-      dst_node = gmap[v_parts[dst]].node(dst);
-      if (dst_node == NULL) {
-        cout << "dst is not existed in all fragments!\n";
-        exit(-1);
+    string line;
+    long src, dst, label, part;
+    try {
+      ifstream fin_r(rfile);
+      // read vertex in
+      while (getline(fin_r, line)) {
+        stringstream ss(line);
+        ss >> src >> part;
+        v_parts[src] = part;
+        if (part == my_rank) {
+          addVertex(src);
+        }
       }
+      fin_r.close();
+
+      ifstream fin_v(vfile);
+      // update vertex
+      while (getline(fin_v, line)) {
+        stringstream ss(line);
+        ss >> src >> label;
+        if (v_parts[src] == my_rank) {
+          updateVInfo(src, label);
+        }
+      }
+      fin_v.close();
+
+      ifstream fin_e(efile);
+      // read edge in
+      while (getline(fin_e, line)) {
+        stringstream ss(line);
+        ss >> src >> dst >> label;
+        if (v_parts[src] == my_rank) {
+          addEdge(src, dst, label);
+        }
+      }
+      fin_e.close();
+    } catch (exception& e) {
+      cout << e.what();
+      exit(0);
     }
-    src_node->addNeighbor(&(dst_node->v()), label);
   }
+
   /* write graph to file */
-  void writeGraph(string& rltfile) {
-    long cnt = 0;
+  void writeGraph(string& filename) {
+    string rltfile = filename + to_string(my_rank);
     ofstream fout(rltfile);
     for (auto& node : _nodes) {
       Vertex& vertex = node.v();
-      vector<Vertex*> neighbors = node.neighbors();
-      vector<long> elabels = node.elabels();
+      vector<long>& neighbors = node.neighbors();
+      vector<long>& elabels = node.elabels();
       fout << vertex.id() << "\t" << vertex.label();
       long len = neighbors.size();
       if (len == 0) {
@@ -117,12 +132,9 @@ class Graph {
         fout << "\t" << len;
         int i;
         for (i = 0; i < len; i++) {
-          fout << "\t" << neighbors[i]->id() << "\t" << elabels[i];
+          fout << "\t" << neighbors[i] << "\t" << elabels[i];
         }
         fout << "\n";
-      }
-      if (++cnt % 100000 == 0) {
-        cout << "G" << _gid << ":" << cnt << "\n";
       }
     }
   }
@@ -132,93 +144,44 @@ class Graph {
   }
 
  private:
-  int _gid;
+   inline void addVertex(long id) {
+     Vertex v(id);
+     Node node(v);
+     _nodes.emplace_back(node);
+     _vid_map[id] = _num++;
+   }
+
+   inline void updateVInfo(long id, long label) {
+     Node* node = Graph::node(id);
+     node->v().addLabel(label);
+   }
+
+   // addEdge must be called after addVertex
+   inline void addEdge(long src, long dst, long label) {
+     Node* src_node = Graph::node(src);
+     src_node->addNeighbor(dst, label);
+   }
+
   long _num;                 // as max node id
   vector<Node> _nodes;       // nodes of graph
   map<long, long> _vid_map;  //(original VID, its position)
 };
 
-/* load graph */
-void loadFile(string& filename, string& partnum) {
-  string rfile = filename + ".part" + partnum;
-  string vfile = filename + ".v";
-  string efile = filename + ".e";
-
-  string line;
-  long src, dst, label, part;
-  long cnt = 0;
-  try {
-    ifstream fin_r(rfile);
-    // read vertex in
-    while (getline(fin_r, line)) {
-      stringstream ss(line);
-      ss >> src >> part;
-      gmap[part].addVertex(src);
-      v_parts[src] = part;
-      if (++cnt % 100000 == 0) {
-        cout << "R:" << cnt << "\n";
-      }
-    }
-    fin_r.close();
-
-    cnt = 0;
-    ifstream fin_v(vfile);
-    // update vertex
-    while (getline(fin_v, line)) {
-      stringstream ss(line);
-      ss >> src >> label;
-      gmap[v_parts[src]].updateVInfo(src, label);
-      if (++cnt % 100000 == 0) {
-        cout << "V:" << cnt << "\n";
-      }
-    }
-    fin_v.close();
-
-    cnt = 0;
-    ifstream fin_e(efile);
-    // read edge in
-    while (getline(fin_e, line)) {
-      stringstream ss(line);
-      ss >> src >> dst >> label;
-      gmap[v_parts[src]].addEdge(src, dst, label);
-      if (++cnt % 500000 == 0) {
-        cout << "E:" << cnt << "\n";
-      }
-    }
-    fin_e.close();
-  } catch (exception& e) {
-    cout << e.what();
-    exit(0);
-  }
-}
-
-void writeFile(string& filename) {
-  for (auto it : gmap) {
-    string rltfile = filename + to_string(it.first);
-    Graph& g = it.second;
-    g.writeGraph(rltfile);
-  }
-}
-
 int main(int argc, char** argv) {
+  MPI_Init(&argc, &argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
+
   string filename = "/home/naughtycat/PregelPlus/data/test/test";
-  string partnum = "4";
   string rltfile = "/home/naughtycat/PregelPlus/data/test/test";
-  if (argc >= 4) {  // get 1 parameter: location
+  if (argc >= 3) {  // get 1 parameter: location
     filename = argv[1];
-    partnum = argv[2];
-    rltfile = argv[3];
-  } else {
-    cout << "Parameter <file path> must be needed!";
-    exit(0);
+    rltfile = argv[2];
   }
 
-  int gnum = atoi(partnum.c_str());
-  for (int i = 0; i < gnum; i++) {
-    Graph g(i);
-    gmap[i] = g;
-  }
+  Graph g;
+  g.loadGraph(filename, comm_sz);
+  g.writeGraph(rltfile);
 
-  loadFile(filename, partnum);
-  writeFile(rltfile);
+  MPI_Finalize();
 }

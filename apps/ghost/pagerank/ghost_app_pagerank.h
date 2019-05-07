@@ -86,23 +86,26 @@ class PRWorker_ghost:public GWorker<PRVertex_ghost, PRAgg_ghost>
 {
 	char buf[100];
 	public:
-    // vid \t num v1 v2 v3
+		// seperate with "\t"
+		// vid	vl	N	v1	el1	v2	el2	...
 		virtual PRVertex_ghost* toVertex(char* line)
 		{
 			char * pch;
 			pch=strtok(line, "\t");
 			PRVertex_ghost* v=new PRVertex_ghost;
 			v->id=atoi(pch);
-			pch=strtok(NULL, " ");
+			pch=strtok(NULL, "\t"); //filter vlabel
+			pch=strtok(NULL, "\t");
 			int num=atoi(pch);
 			v->value().deg=atoi(pch);
 			EdgeContainer & edges=v->neighbors();
 			for(int i=0; i<num; i++)
 			{
-				pch=strtok(NULL, " ");
+				pch=strtok(NULL, "\t");
 				EdgeT edge;
 				edge.id=atoi(pch);
 				edges.push_back(edge);
+				pch=strtok(NULL, "\t"); //filter elabel
 			}
 			return v;
 		}

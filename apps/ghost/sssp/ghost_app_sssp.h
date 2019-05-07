@@ -76,7 +76,8 @@ public:
 class SPWorker_ghost: public GWorker<SPVertex_ghost> {
 	char buf[100];
 public:
-// vid \t v1 v2 v3
+	// seperate with "\t"
+	// vid	vl	N	v1	el1	v2	el2	...
 	virtual SPVertex_ghost* toVertex(char* line) {
 		char * pch;
 		pch = strtok(line, "\t");

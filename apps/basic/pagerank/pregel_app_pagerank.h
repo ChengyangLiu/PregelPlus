@@ -89,19 +89,22 @@ class PRWorker_pregel:public Worker<PRVertex_pregel, PRAgg_pregel>
 {
 	char buf[100];
 	public:
-		// vid \t num v1 v2 v3
+		// seperate with "\t"
+		// vid	vl	N	v1	el1	v2	el2	...
 		virtual PRVertex_pregel* toVertex(char* line)
 		{
 			char * pch;
 			pch=strtok(line, "\t");
 			PRVertex_pregel* v=new PRVertex_pregel;
 			v->id=atoi(pch);
-			pch=strtok(NULL, " ");
+			pch=strtok(NULL, "\t"); //filter vlabel
+			pch=strtok(NULL, "\t");
 			int num=atoi(pch);
 			for(int i=0; i<num; i++)
 			{
-				pch=strtok(NULL, " ");
+				pch=strtok(NULL, "\t");
 				v->value().edges.push_back(atoi(pch));
+				pch=strtok(NULL, "\t"); //filter elabel
 			}
 			return v;
 		}
