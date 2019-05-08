@@ -1,7 +1,7 @@
 #include "ghost_app_sssp.h"
 
 int main(int argc, char* argv[]){
-	long id = atoi(argv[1]);
+	long id = atol(argv[1]);
 	string input = argv[2];
 	string num = argv[3];
 	string output = argv[4];

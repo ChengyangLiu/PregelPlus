@@ -1,7 +1,7 @@
 #include "basic/pregel-dev.h"
 using namespace std;
 
-//input line format: vertexID \t numOfNeighbors neighbor1 neighbor2 ...
+//input line format: vid	N	v1	el1	v2	el2	...
 //output line format: v \t PageRank(v) ...
 
 //an aggregator collects PageRank(v) for all dangling vertices, which is then redistributed to all vertices in the next superstep
@@ -90,14 +90,14 @@ class PRWorker_pregel:public Worker<PRVertex_pregel, PRAgg_pregel>
 	char buf[100];
 	public:
 		// seperate with "\t"
-		// vid	vl	N	v1	el1	v2	el2	...
+		// vid	N	v1	el1	v2	el2	...
 		virtual PRVertex_pregel* toVertex(char* line)
 		{
 			char * pch;
 			pch=strtok(line, "\t");
 			PRVertex_pregel* v=new PRVertex_pregel;
 			v->id=atoi(pch);
-			pch=strtok(NULL, "\t"); //filter vlabel
+
 			pch=strtok(NULL, "\t");
 			int num=atoi(pch);
 			for(int i=0; i<num; i++)
@@ -110,8 +110,8 @@ class PRWorker_pregel:public Worker<PRVertex_pregel, PRAgg_pregel>
 		}
 
 		virtual void toline(PRVertex_pregel* v, BufferedWriter & writer)
-		{
-			sprintf(buf, "%d\t%f\n", v->id, v->value().pr);
+		{ // use "e" format for pr-value (graph may be very huge)
+			sprintf(buf, "%d\t%e\n", v->id, v->value().pr);
 			writer.write(buf);
 		}
 };

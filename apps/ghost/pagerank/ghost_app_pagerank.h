@@ -1,7 +1,7 @@
 #include "ghost/ghost-dev.h"
 using namespace std;
 
-//input line format: vertexID \t numOfNeighbors neighbor1 neighbor2 ...
+//input line format: vid	N	v1	el1	v2	el2	...
 //output line format: v \t PageRank(v) ...
 
 //an aggregator collects PageRank(v) for all dangling vertices, which is then redistributed to all vertices in the next superstep
@@ -87,14 +87,14 @@ class PRWorker_ghost:public GWorker<PRVertex_ghost, PRAgg_ghost>
 	char buf[100];
 	public:
 		// seperate with "\t"
-		// vid	vl	N	v1	el1	v2	el2	...
+		// vid	N	v1	el1	v2	el2	...
 		virtual PRVertex_ghost* toVertex(char* line)
 		{
 			char * pch;
 			pch=strtok(line, "\t");
 			PRVertex_ghost* v=new PRVertex_ghost;
 			v->id=atoi(pch);
-			pch=strtok(NULL, "\t"); //filter vlabel
+
 			pch=strtok(NULL, "\t");
 			int num=atoi(pch);
 			v->value().deg=atoi(pch);
@@ -111,8 +111,8 @@ class PRWorker_ghost:public GWorker<PRVertex_ghost, PRAgg_ghost>
 		}
 
 		virtual void toline(PRVertex_ghost* v, BufferedWriter & writer)
-		{
-			sprintf(buf, "%d\t%f\n", v->id, v->value().pr);
+		{ // use e format for pr-value (graph may be very huge)
+			sprintf(buf, "%d\t%e\n", v->id, v->value().pr);
 			writer.write(buf);
 		}
 };

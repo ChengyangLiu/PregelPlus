@@ -1,7 +1,7 @@
 #include "ghost/ghost-dev.h"
 using namespace std;
 
-//input line format: vertexID \t numOfNeighbors neighbor1 neighbor2 ...
+//input line format: vid	N	v1	el1	v2	el2	...
 //output line format: v \t min_vertexID(v's connected component)
 
 class CCVertex_ghost: public GVertex<VertexID, VertexID, VertexID> {
@@ -31,13 +31,13 @@ class CCWorker_ghost: public GWorker<CCVertex_ghost> {
 	char buf[100];
 	public:
 		// seperate with "\t"
-		// vid	vl	N	v1	el1	v2	el2	...
+		// vid	N	v1	el1	v2	el2	...
 		virtual CCVertex_ghost* toVertex(char* line) {
 			char * pch;
 			pch = strtok(line, "\t");
 			CCVertex_ghost* v = new CCVertex_ghost;
 			v->id = atoi(pch);
-			pch=strtok(NULL, "\t"); //filter vlabel
+
 			pch = strtok(NULL, "\t");
 			int num = atoi(pch);
 			EdgeContainer & edges = v->neighbors();

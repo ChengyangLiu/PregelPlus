@@ -9,7 +9,7 @@ int main(int argc, char* argv[]){
 	string output = argv[3];
 	input = input + "\t" + num;
 	init_workers();
-	set_ghost_threshold(2);//set to at least 100 for real large graphs
+	set_ghost_threshold(100);//set to at least 100 for real large graphs
 	ghost_hashmin(input, output, true);
 	worker_finalize();
 	return 0;

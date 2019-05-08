@@ -1,7 +1,7 @@
 #include "basic/pregel-dev.h"
 using namespace std;
 
-//input line format: vertexID \t numOfNeighbors neighbor1 neighbor2 ...
+//input line format: vid	N	v1	el1	v2	el2	...
 //output line format: v \t min_vertexID(v's connected component)
 
 struct CCValue_pregel
@@ -74,14 +74,14 @@ class CCWorker_pregel:public Worker<CCVertex_pregel>
 	public:
 		//C version
 		// seperate with "\t"
-		// vid	vl	N	v1	el1	v2	el2	...
+		// vid	N	v1	el1	v2	el2	...
 		virtual CCVertex_pregel* toVertex(char* line)
 		{
 			char * pch;
 			pch=strtok(line, "\t");
 			CCVertex_pregel* v=new CCVertex_pregel;
 			v->id=atoi(pch);
-			pch=strtok(NULL, "\t"); //filter vlabel
+
 			pch=strtok(NULL, "\t");
 			int num=atoi(pch);
 			for(int i=0; i<num; i++)

@@ -2,8 +2,7 @@
 #include <float.h>
 using namespace std;
 
-//input line format: vertexID \t numOfNeighbors neighbor1 neighbor2 ...
-//edge lengths are assumed to be 1
+//input line format: vid	N	v1	el1	v2	el2	...
 
 //output line format: v \t shortest_path_length  previous_vertex_on_shorest_path
 //previous_vertex_on_shorest_path=-1 for source vertex
@@ -138,7 +137,7 @@ class SPWorker_pregel:public Worker<SPVertex_pregel>
 
 		//input line:
 		// seperate with "\t"
-		// vid	vl	N	v1	el1	v2	el2	...
+		// vid	N	v1	el1	v2	el2	...
 		virtual SPVertex_pregel* toVertex(char* line)
 		{
 			char * pch;
@@ -153,8 +152,6 @@ class SPWorker_pregel:public Worker<SPVertex_pregel>
 				v->value().dist=DBL_MAX;
 				v->vote_to_halt();
 			}
-			// filter vlabel
-			pch=strtok(NULL, "\t");
 
 			pch=strtok(NULL, "\t");
 			int num=atoi(pch);

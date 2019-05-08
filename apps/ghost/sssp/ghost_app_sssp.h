@@ -2,8 +2,7 @@
 #include <float.h>
 using namespace std;
 
-//input line format: vertexID \t numOfNeighbors neighbor1 neighbor2 ...
-//edge lengths are assumed to be 1
+//input line format: vid	N	v1	el1	v2	el2	...
 
 //output line format: v \t shortest_path_length  previous_vertex_on_shorest_path
 //previous_vertex_on_shorest_path=-1 for source vertex
@@ -77,7 +76,7 @@ class SPWorker_ghost: public GWorker<SPVertex_ghost> {
 	char buf[100];
 public:
 	// seperate with "\t"
-	// vid	vl	N	v1	el1	v2	el2	...
+	// vid	N	v1	el1	v2	el2	...
 	virtual SPVertex_ghost* toVertex(char* line) {
 		char * pch;
 		pch = strtok(line, "\t");
@@ -91,8 +90,6 @@ public:
 			v->value().dist = DBL_MAX;
 			v->vote_to_halt();
 		}
-		// filter vlabel
-		pch=strtok(NULL, "\t");
 
 		EdgeContainer & edges = v->neighbors();
 		pch=strtok(NULL, "\t");
