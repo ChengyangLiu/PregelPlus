@@ -15,20 +15,17 @@ using namespace std;
 /* Convert .e file to .adj file.
  * Only be used for sorted .e file or continous edges (it means all edges from one vertex are continous in file)
  * @Input: $1=efile path; $2=output path
- * @Output: a adj file
+ * @Output: an adj file
  * @Author: chengyangliu*/
 
  int main(int argc, char** argv) {
 
-   string filename = "/home/naughtycat/PregelPlus/data/test/test";
-   string rltfile = "/home/naughtycat/PregelPlus/data/test/test";
+   string efile = "/home/naughtycat/PregelPlus/data/test/test.e";
+   string resfile = "/home/naughtycat/PregelPlus/data/test/test.adj";
    if (argc >= 3) {  // get 1 parameter: location
-     filename = argv[1];
-     rltfile = argv[2];
+     efile = argv[1];
+     resfile = argv[2];
    }
-
-   string efile = filename + ".e";
-   string resfile = rltfile + ".adj";
 
    string line;
    long src, dst, label;

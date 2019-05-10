@@ -8,6 +8,7 @@ int main(int argc, char* argv[]){
 	string num = argv[2];
 	string output = argv[3];
 	input = input + "\t" + num;
+	
 	init_workers();
 	pregel_hashmin(input, output, true);
 	worker_finalize();

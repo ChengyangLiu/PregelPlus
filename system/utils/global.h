@@ -191,6 +191,12 @@ void set_ghost_threshold(int tau)
 }
 
 //====================================================
-#define ROUND 11 //for PageRank
+//for PageRank
+int ROUND = 11;
+
+void set_pagerank_round(int round)
+{
+    ROUND = round;
+}
 
 #endif
