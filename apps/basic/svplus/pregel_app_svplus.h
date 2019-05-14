@@ -10,7 +10,7 @@ using namespace std;
 
 #define ROUND_STEP_NUM 7
 
-//input line format: vertexID \t numOfNeighbors neighbor1 neighbor2 ...
+//input line format: vid	N	v1	el1	v2	el2	...
 //output line format: v \t min_vertexID(v's connected component)
 
 //naming rules:
@@ -203,7 +203,7 @@ class SVAgg_pregel:public Aggregator<SVVertex_pregel, bool, bool>
 class SVWorker_pregel:public Worker<SVVertex_pregel,  SVAgg_pregel>
 {
 	char buf[100];
-	// vid \t num v1 v2 v3
+	// vid	N	v1	el1	v2	el2	...
 	public:
 	virtual SVVertex_pregel* toVertex(char* line)
 	{
@@ -211,12 +211,13 @@ class SVWorker_pregel:public Worker<SVVertex_pregel,  SVAgg_pregel>
 		pch=strtok(line, "\t");
 		SVVertex_pregel* v=new SVVertex_pregel;
 		v->id=atoi(pch);
-		pch=strtok(NULL, " ");
+		pch=strtok(NULL, "\t");
 		int num=atoi(pch);
 		for(int i=0; i<num; i++)
 		{
-			pch=strtok(NULL, " ");
+			pch=strtok(NULL, "\t");
 			v->value().edges.push_back(atoi(pch));
+			pch=strtok(NULL, "\t"); //filter elabel
 		}
 		v->value().D=v->id;
 		v->value().pre_D = v->id; //record the D[u] in the previous superstep in order to check whether the ALG come into convergence

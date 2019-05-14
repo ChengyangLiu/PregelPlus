@@ -10,3 +10,22 @@ Pregel+ supports two effective message reduction techniques: (1)vertex mirroring
 ## License
 
 Copyright 2018 Husky Data Lab, CUHK
+
+## Update For Tianhe (2019.5.14)
+
+1. Remove HDFS IO, implement local IO, so run much easily in tianhe.
+
+2. How to compile in tianhe.
+
+   Firstly set $SYSTEM_PATH in Makefile, then copy it to any APP directory, and use command "make run_tianhe",  e.g.
+   ```script
+   # Please set $SYSTEM_PATH in Makefile
+   $ cp ./Makefile ./apps/basic/sssp/
+   $ cd ./apps/basic/sssp/
+   $ make run_tianhe
+   ```
+3. How to run.
+
+   Run it just like running any MPI program in tianhe.
+
+4. Some programs for graph partition are in tools directory.

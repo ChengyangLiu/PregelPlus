@@ -2,7 +2,7 @@ CCOMPILE=mpic++ -std=c++11
 
 #HADOOP_HOME= [path]
 #JAVA_HOME= [path]
-SYSTEM_PATH=/home/naughtycat/PregelPlus/system
+SYSTEM_PATH=[Your PregelPlus system path]
 
 CPPFLAGS= -I$(HADOOP_HOME)/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -I$(SYSTEM_PATH)  -Wno-deprecated -O2
 CPPFLAGS_N= -I$(SYSTEM_PATH)  -Wno-deprecated -O2
