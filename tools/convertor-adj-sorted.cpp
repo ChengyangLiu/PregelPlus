@@ -1,80 +1,60 @@
-#include <stdlib.h>
-#include <time.h>
-#include <exception>
-#include <fstream>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <set>
-#include <sstream>
-#include <string>
-#include <vector>
-
-using namespace std;
+#include <stdio.h>
+#include <string.h>
 
 /* Convert .e file to .adj file.
- * Only be used for sorted .e file or continous edges (it means all edges from one vertex are continous in file)
+ * Only be used for sorted .e file or continous edges (it means all edges from
+ * one vertex are continous in file)
  * @Input: $1=efile path; $2=output path
  * @Output: an adj file
  * @Author: chengyangliu*/
 
- int main(int argc, char** argv) {
+#define BUF_SIZE 10000
 
-   string efile = "/home/naughtycat/PregelPlus/data/test/test.e";
-   string resfile = "/home/naughtycat/PregelPlus/data/test/test.adj";
-   if (argc >= 3) {  // get 1 parameter: location
-     efile = argv[1];
-     resfile = argv[2];
-   }
+int main(int argc, char** argv) {
+  char efile[100] = "/home/naughtycat/PregelPlus/data/exp/vldb2014.e";
+  char resfile[100] = "/home/naughtycat/PregelPlus/data/exp/vldb2014.adj";
+  if (argc >= 3) {  // get 1 parameter: location
+    strcpy(efile, argv[1]);
+    strcpy(resfile, argv[2]);
+  }
 
-   string line;
-   long src, dst, label;
-   long pos_id = 0;
+  FILE* fin = fopen(efile, "r");
+  FILE* fout = fopen(resfile, "w");
+  unsigned int dst[BUF_SIZE];
+  unsigned int label[BUF_SIZE];
+  size_t len = 0;
+  unsigned int src;
+  unsigned int present_id = 0;
+  unsigned int cnt = 0;
+  // read vertex in
 
-   vector<long> dst_list;
-   vector<long> label_list;
-
-   ifstream fin(efile);
-   ofstream fout(resfile);
-   // read vertex in
-   pos_id = 0;
-   long cnt = 0;
-   while (getline(fin, line)) {
-      // counting
-      if (++cnt % 5000000 == 0) {
-        cout << "E:" << cnt << "\n";
+  while (fscanf(fin, "%u%u%u", &src, &dst[len], &label[len]) != EOF) {
+    //printf("%u\t%u\t%u\n", src, dst[len], cnt);
+    if (++cnt % 10000000 == 0) {  // counting
+      printf("E:%u\n", cnt);
+    }
+    if (src != present_id) {
+      // write present id
+      fprintf(fout, "%u\t%u", present_id, (unsigned int)len);
+      for (size_t i = 0; i < len; i++) {
+        fprintf(fout, "\t%u\t%u", dst[i], label[i]);
       }
-      // read in
-      stringstream ss(line);
-      ss >> src >> dst >> label;
-      if (src != pos_id) {
-        // write present id
-        int len = dst_list.size();
-        fout << pos_id << "\t" << len;
-        for (int i = 0; i < len; i++) {
-          fout << "\t" << dst_list[i] << "\t" << label_list[i];
-        }
-        fout << "\n";
-        // move next
-        pos_id = src;
-        // clear list
-        dst_list.clear();
-        dst_list.shrink_to_fit();
-        label_list.clear();
-        label_list.shrink_to_fit();
-      }
-      dst_list.emplace_back(dst);
-      label_list.emplace_back(label);
-   }
-   int len = dst_list.size();
-   if (len != 0) {
-     fout << pos_id << "\t" << len;
-     for (int i = 0; i < len; i++) {
-       fout << "\t" << dst_list[i] << "\t" << label_list[i];
-     }
-     fout << "\n";
-   }
+      fprintf(fout, "\n");
+      // move next
+      present_id = src;
+      // clear list
+      dst[0] = dst[len];
+      label[0] = label[len];
+      len = 0;
+    }
+    len++;
+  }
+  fprintf(fout, "%u\t%u", present_id, (unsigned int)len);
+  for (size_t i = 0; i < len; i++) {
+    fprintf(fout, "\t%u\t%u", dst[i], label[i]);
+  }
+  fprintf(fout, "\n");
 
-   fin.close();
-   fout.close();
- }
+  fclose(fin);
+  fclose(fout);
+}

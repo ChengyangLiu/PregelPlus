@@ -1,17 +1,6 @@
+#include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-#include <exception>
-#include <fstream>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <set>
-#include <sstream>
-#include <string>
-#include <vector>
 #include <string.h>
-
-using namespace std;
 
 /* Check whether the adj file is right.
  * One vertex in different postion in file will be detected.
@@ -22,49 +11,49 @@ using namespace std;
 
  int main(int argc, char** argv) {
 
-   string adjfile = argv[1];
-   long maxn = atol(argv[2]);
-   cout << "checking v = " << maxn << "\n";
+   char adjfile[100] = "/home/naughtycat/PregelPlus/data/exp/vldb2014.adj";
+   unsigned int maxn = 0;
+   if (argc >= 3) {  // get 1 parameter: location
+     strcpy(adjfile, argv[1]);
+     maxn = atol(argv[2]);
+   }
+   printf("checking v = %u\n", maxn);
 
-   vector<long> list (maxn, 0);
+   unsigned int list[maxn]{0};
+   unsigned int src;
+   unsigned int cnt = 0;
 
-   string line;
-   long src;
-   long cnt = 0;
-
-   ifstream fin(adjfile);
+   FILE* fin = fopen(adjfile, "r");
    // read vertex in
-   while (getline(fin, line)) {
-      if (++cnt % 1000000 == 0) {
-         cout << "checked:" << cnt << "\n";
+   while (fscanf(fin, "%u%*c%*[^\n]", &src) != EOF) {
+      if (++cnt % 10000000 == 0) {
+        printf("checked:%u\n", cnt);
       }
-      stringstream ss(line);
-      ss >> src;
       list[src]++;
    }
-   fin.close();
+   fclose(fin);
 
    bool flag = true;
    cnt = 0;
-   ofstream fc;
-   fc.open(adjfile + "-zero");
-   for (long i = 0; i < maxn; i++) {
+   strcat(adjfile, "-zero");
+   FILE* fout = fopen(adjfile, "w");
+   for (size_t i = 0; i < maxn; i++) {
      if (list[i] == 1) {
 
      } else if (list[i] == 0) {
        cnt++;
-       fc << i << "\t" << 0 << "\n";
+       fprintf(fout, "%u\t0\n", (unsigned int)i);
      } else {
        flag = false;
-       cout << i << ":" << list[i] << "\n";
+       printf("%u:%u\n", (unsigned int)i, list[i]);
      }
    }
-   fc.close();
+   fclose(fout);
 
    if (flag) {
-     cout << "Right adj file\n";
-     cout << "zero vertex number:" << cnt << "\n";
+     printf("right adj file\n");
+     printf("zero vertex number:%u\n", cnt);
    } else {
-     cout << "wrong line\n";
+     printf("wrong line\n");
    }
  }

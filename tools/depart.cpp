@@ -1,90 +1,85 @@
+#include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-#include <exception>
-#include <fstream>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <set>
-#include <sstream>
-#include <string>
-#include <vector>
 #include <string.h>
-#include <math.h>
+#include <map>
 #include "mpi.h"
-
-using namespace std;
 
 /* Convert adj and rfile to many part-files.
  * @Input: $1=r file path; $2=adj file path; $3=output path; $4=N (part number)
  * @Output: N part files
  * @Author: chengyangliu*/
 
- map<long, int> which_p;
+#define BUF_SIZE 50000
+
+ std::map<unsigned int, int> which_p;
 
  int main(int argc, char** argv) {
    int vote = 0;
    int flag = 0;
    int myrank, numproces;
-
-   string rfile = argv[1];
-   string adjfile = argv[2];
-   string resfile = argv[3];
-   int part_num = atoi(argv[4]);
-
    MPI_Init(&argc, &argv);
    MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
    MPI_Comm_size(MPI_COMM_WORLD, &numproces);
 
-   string line;
-   long src;
+   char rfile[100] = "/home/naughtycat/PregelPlus/data/exp/vldb2014.part3";
+   char adjfile[100] = "/home/naughtycat/PregelPlus/data/exp/vldb2014.adj";
+   char resfile[100] = "/home/naughtycat/PregelPlus/data/exp/vldb2014";
+   size_t part_num = 1;
+   if (argc >= 3) {  // get 1 parameter: location
+     strcpy(rfile, argv[1]);
+     strcpy(adjfile, argv[2]);
+     strcpy(resfile, argv[3]);
+     part_num = atoi(argv[4]);
+   }
+
    int part;
-   long cnt = 0;
+   unsigned int src;
+   unsigned int cnt = 0;
+   char buf[BUF_SIZE];
 
    // read r in
-   ifstream fin_r(rfile);
-   while (getline(fin_r, line)) {
+   FILE* finr = fopen(rfile, "r");
+   while (fscanf(finr, "%u%u", &src, &part) != EOF) {
      if (++cnt % 5000000 == 0) {
-       cout << "[Worker" << myrank << "]: R " << cnt << "\n";
+       printf("[Worker%d]: R%u\n", myrank, cnt);
      }
-      stringstream ss(line);
-      ss >> src >> part;
-      if (part % numproces == myrank) {
-        which_p[src] = part;
-      }
+     if (part % numproces == myrank) {
+       which_p[src] = part;
+     }
    }
-   fin_r.close();
+   fclose(finr);
 
    cnt = 0;
    // open adj file
-   ifstream fin_adj(adjfile);
+   FILE* finadj = fopen(adjfile, "r");
    // open outfile
-   ofstream fout[part_num];
-   for (int i = 0; i < part_num; i++) {
+   FILE* fout[part_num];
+   for (size_t i = 0; i < part_num; i++) {
      if (i % numproces == myrank) {
-       fout[i].open(resfile + to_string(i));
+       char partfile[100];
+       strcpy(partfile, resfile);
+       strcat(partfile, std::to_string(i).c_str());
+       fout[i] = fopen(partfile, "w");
      }
    }
 
    // depart
-   while (getline(fin_adj, line)) {
+   while (fscanf(finadj, "%u%[^\n]", &src, buf) != EOF) {
      if (++cnt % 5000000 == 0) {
-       cout << "[Worker" << myrank << "]: V " << cnt << "\n";
+       printf("[Worker%d]: V%u\n", myrank, cnt);
      }
-     stringstream ss(line);
-     ss >> src;
      auto it = which_p.find(src);
      if (it != which_p.end()) {
-       fout[it->second] << line << "\n";
+       fprintf(fout[it->second], "%u%s\n", src, buf);
      }
    }
 
    // close adj file
-   fin_adj.close();
+   fclose(finadj);
    // close outfile
-   for (int i = 0; i < part_num; i++) {
+   for (size_t i = 0; i < part_num; i++) {
      if (i % numproces == myrank) {
-       fout[i].close();
+       fclose(fout[i]);
      }
    }
 
@@ -93,10 +88,10 @@ using namespace std;
      MPI_Finalize();
    } else {
      if (myrank == 0) {
-       for (int source = 1; source < numproces; source++) {
+       for (size_t source = 1; source < numproces; source++) {
          MPI_Recv(&vote, 1, MPI_INT, source, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
        }
-       for (int source = 1; source < numproces; source++) {
+       for (size_t source = 1; source < numproces; source++) {
          flag = 1;
          MPI_Send(&flag, 1, MPI_INT, source, 0, MPI_COMM_WORLD);
        }
