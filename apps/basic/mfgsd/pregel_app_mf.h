@@ -6,11 +6,15 @@ using namespace std;
 // user's label is 0, item's label is 1.
 // output line format: loss value
 
+// feature number
 #define FEATURE_NUM 5
+// regular coefficient
 #define LAMBDA 0.01
+// learning rate for SGD
 #define ETA 0.00005
-#define LOSS_THRESHOLD 0.000001
-#define ITERATION INT_MAX
+// halt condition
+#define LOSS_THRESHOLD 100
+#define ITERATION 5000
 typedef double score_type;
 
 class K_Dim {
@@ -94,31 +98,31 @@ obinstream& operator>>(obinstream& m, K_Dim& v) { m >> v._vec; }
 //====================================
 class SPVertex_pregel;
 
-struct SPEdge_pregel {
+struct MFEdge_pregel {
   int nb;
   score_type score;
 };
 
-ibinstream& operator<<(ibinstream& m, const SPEdge_pregel& v) {
+ibinstream& operator<<(ibinstream& m, const MFEdge_pregel& v) {
   m << v.nb;
   m << v.score;
   return m;
 }
 
-obinstream& operator>>(obinstream& m, SPEdge_pregel& v) {
+obinstream& operator>>(obinstream& m, MFEdge_pregel& v) {
   m >> v.nb;
   m >> v.score;
   return m;
 }
 
-struct SPValue_pregel {
+struct MFValue_pregel {
   int label;  // 0 is user, 1 is item
   K_Dim dim;
-  vector<SPEdge_pregel> edges;  // user has children, item has parents
+  vector<MFEdge_pregel> edges;  // user has children, item has parents
   double loss;
 };
 
-ibinstream& operator<<(ibinstream& m, const SPValue_pregel& v) {
+ibinstream& operator<<(ibinstream& m, const MFValue_pregel& v) {
   m << v.label;
   m << v.dim;
   m << v.edges;
@@ -126,7 +130,7 @@ ibinstream& operator<<(ibinstream& m, const SPValue_pregel& v) {
   return m;
 }
 
-obinstream& operator>>(obinstream& m, SPValue_pregel& v) {
+obinstream& operator>>(obinstream& m, MFValue_pregel& v) {
   m >> v.label;
   m >> v.dim;
   m >> v.edges;
@@ -136,31 +140,53 @@ obinstream& operator>>(obinstream& m, SPValue_pregel& v) {
 
 //====================================
 
-struct SPMsg_pregel {
+struct MFMsg_pregel {
   score_type score;
   K_Dim msg_dim;
 };
 
-ibinstream& operator<<(ibinstream& m, const SPMsg_pregel& v) {
+ibinstream& operator<<(ibinstream& m, const MFMsg_pregel& v) {
   m << v.score;
   m << v.msg_dim;
   return m;
 }
 
-obinstream& operator>>(obinstream& m, SPMsg_pregel& v) {
+obinstream& operator>>(obinstream& m, MFMsg_pregel& v) {
   m >> v.score;
   m >> v.msg_dim;
   return m;
 }
 
 //====================================
+// statistics between workers
+struct Loss {
+  double last_last_round;
+  double last_round;
+  double now;
+};
 
-class SPVertex_pregel : public Vertex<VertexID, SPValue_pregel, SPMsg_pregel> {
+ibinstream& operator<<(ibinstream& m, const Loss& v) {
+  m << v.last_last_round;
+  m << v.last_round;
+  m << v.now;
+  return m;
+}
+
+obinstream& operator>>(obinstream& m, Loss& v) {
+  m >> v.last_last_round;
+  m >> v.last_round;
+  m >> v.now;
+  return m;
+}
+
+//====================================
+
+class MFVertex_pregel : public Vertex<VertexID, MFValue_pregel, MFMsg_pregel> {
  public:
   void broadcast() {
-    vector<SPEdge_pregel>& nbs = value().edges;
+    vector<MFEdge_pregel>& nbs = value().edges;
     for (int i = 0; i < nbs.size(); i++) {
-      SPMsg_pregel msg;
+      MFMsg_pregel msg;
       msg.score = nbs[i].score;
       msg.msg_dim = value().dim;
       send_message(nbs[i].nb, msg);  // send MSG to its children/parents
@@ -171,24 +197,34 @@ class SPVertex_pregel : public Vertex<VertexID, SPValue_pregel, SPMsg_pregel> {
     if (step_num() == 1) {
       broadcast();
     } else {
-      double loss = 0.0;
-      size_t k = messages.size();
-      auto p_dim = value().dim;
-      for (size_t i = 0; i < k; i++) {
-        SPMsg_pregel msg = messages[i];
-        auto& q_dim = msg.msg_dim;
-        double val = p_dim.dot(q_dim) - msg.score;
-        auto grad = q_dim * val + p_dim * LAMBDA;  // calculate gradient
-        value().dim -= grad * ETA;                 // update dim
-        loss += val * val;
-      }
-      loss /= k;
-      loss = sqrt(loss);
-      value().loss = loss;  // update loss
-      if (loss < LOSS_THRESHOLD ||
-          step_num() == ITERATION) {  // v loss = sqrt(sigma((r-pq)^2)/k)
+      Loss* agg = (Loss*)getAgg();
+      // check whether loss does not change, or iteration max
+      if (fabs(agg->last_round - agg->last_last_round) < LOSS_THRESHOLD ||
+          step_num() == ITERATION) {
         vote_to_halt();
       } else {
+        if (value().label == 0) {  // user
+          auto& loss = value().loss;
+          loss = 0.0;
+          auto p_dim = value().dim;
+          for (size_t i = 0; i < messages.size(); i++) {
+            MFMsg_pregel msg = messages[i];
+            auto& q_dim = msg.msg_dim;
+            double val = p_dim.dot(q_dim) - msg.score;
+            auto grad = q_dim * val + p_dim * LAMBDA;  // calculate gradient
+            value().dim -= grad * ETA;                 // update dim
+            loss += val * val;
+          }
+        } else {  // item
+          auto p_dim = value().dim;
+          for (size_t i = 0; i < messages.size(); i++) {
+            MFMsg_pregel msg = messages[i];
+            auto& q_dim = msg.msg_dim;
+            double val = p_dim.dot(q_dim) - msg.score;
+            auto grad = q_dim * val + p_dim * LAMBDA;  // calculate gradient
+            value().dim -= grad * ETA;                 // update dim
+          }
+        }
         broadcast();
       }
     }
@@ -197,17 +233,61 @@ class SPVertex_pregel : public Vertex<VertexID, SPValue_pregel, SPMsg_pregel> {
   virtual void print() {}
 };
 
-class SPWorker_pregel : public Worker<SPVertex_pregel> {
+class MFAgg_pregel : public Aggregator<MFVertex_pregel, Loss, Loss> {
+ private:
+  Loss loss;
+
+ public:
+  // all workers init loss
+  virtual void init() {
+    if (step_num() == 1) {
+      loss.last_last_round = 0.0;
+      loss.last_round = 0.0;
+      loss.now = DBL_MAX;
+    } else {
+      loss.now = 0.0;
+      if (get_worker_id() == 0) {
+        printf("Round Loss:%e\n", loss.last_round);
+      }
+    }
+  }
+  // all workers calculate loss of user
+  virtual void stepPartial(MFVertex_pregel* v) {
+    if (step_num() != 1) {
+      if (v->value().label == 0) {
+        loss.now += v->value().loss;
+      }
+    }
+  }
+  // aggregate partial loss
+  virtual Loss* finishPartial() { return &loss; }
+
+  // sum partial loss in master (worker0)
+  virtual void stepFinal(Loss* part_loss) {
+    if (step_num() != 1) {
+      loss.now += (*part_loss).now;
+    }
+  }
+
+  // broadcast loss statistics to all workers
+  virtual Loss* finishFinal() {
+    loss.last_last_round = loss.last_round;
+    loss.last_round = loss.now;
+    return &loss;
+  }
+};
+
+class MFWorker_pregel : public Worker<MFVertex_pregel, MFAgg_pregel> {
   char buf[1000];
 
  public:
   // input line:
   // seperate with "\t"
   // vid  vlabel N	v1	el1	v2	el2	...
-  virtual SPVertex_pregel* toVertex(char* line) {
+  virtual MFVertex_pregel* toVertex(char* line) {
     char* pch;
     pch = strtok(line, "\t");
-    SPVertex_pregel* v = new SPVertex_pregel;
+    MFVertex_pregel* v = new MFVertex_pregel;
     int id = atoi(pch);
     v->id = id;
     v->value().dim.init(FEATURE_NUM);
@@ -221,7 +301,7 @@ class SPWorker_pregel : public Worker<SPVertex_pregel> {
       int nb = atoi(pch);
       pch = strtok(NULL, "\t");
       score_type score = (score_type)atof(pch);
-      SPEdge_pregel edge = {nb, score};
+      MFEdge_pregel edge = {nb, score};
       v->value().edges.push_back(edge);
     }
     return v;
@@ -229,7 +309,7 @@ class SPWorker_pregel : public Worker<SPVertex_pregel> {
 
   // output line:
   // vid \t loss
-  virtual void toline(SPVertex_pregel* v, BufferedWriter& writer) {
+  virtual void toline(MFVertex_pregel* v, BufferedWriter& writer) {
     sprintf(buf, "%d\t%e\n", v->id, v->value().loss);
     writer.write(buf);
   }
@@ -241,9 +321,11 @@ void pregel_mf(string in_path, string out_path, bool use_combiner) {
   param.output_path = out_path;
   param.force_write = true;
   param.native_dispatcher = false;
-  SPWorker_pregel worker;
+  MFWorker_pregel worker;
   // all messages from neighbors are needed, so don't set combiner.
-  // SPCombiner_pregel combiner;
+  // MFCombiner_pregel combiner;
   // if (use_combiner) worker.setCombiner(&combiner);
+  MFAgg_pregel agg;
+  worker.setAggregator(&agg);
   worker.run(param);
 }
