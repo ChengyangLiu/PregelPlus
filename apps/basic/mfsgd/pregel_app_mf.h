@@ -2,6 +2,7 @@
 #include "basic/pregel-dev.h"
 using namespace std;
 // Matrix factorization R(socre) = P(user,feature)*Q(feature,item)
+// optimization: SGD
 // input line format: vid	label N	v1	el1	v2	el2	...
 // user's label is 0, item's label is 1.
 // output line format: loss value
@@ -11,10 +12,14 @@ using namespace std;
 // regular coefficient
 #define LAMBDA 0.01
 // learning rate for SGD
+// must very small in large data
 #define ETA 0.00005
+// RMSE = sqrt(sigma((score - p*q)^2)/k)
+// Loss = sigma((score - p*q)^2)
 // halt condition
-#define LOSS_THRESHOLD 100
-#define ITERATION 5000
+#define LOSS_DIF_HRESHOLD 1000
+#define LOSS_THRESHOLD 10000
+#define ITERATION 2000
 typedef double score_type;
 
 class K_Dim {
@@ -199,8 +204,8 @@ class MFVertex_pregel : public Vertex<VertexID, MFValue_pregel, MFMsg_pregel> {
     } else {
       Loss* agg = (Loss*)getAgg();
       // check whether loss does not change, or iteration max
-      if (fabs(agg->last_round - agg->last_last_round) < LOSS_THRESHOLD ||
-          step_num() == ITERATION) {
+      if (fabs(agg->last_round - agg->last_last_round) < LOSS_DIF_HRESHOLD ||
+          agg->last_round < LOSS_THRESHOLD || step_num() == ITERATION) {
         vote_to_halt();
       } else {
         if (value().label == 0) {  // user
