@@ -29,3 +29,21 @@ Copyright 2018 Husky Data Lab, CUHK
    Run it just like running any MPI program in tianhe.
 
 4. Some programs for graph partition are in tools directory.
+
+## Add Matrix Factorization (2019.5.26)
+
+   Matrix factorization R(socre) = P(user, feature) * Q(feature, item).
+   
+   Providing two optimization: SGD and Adam.
+   
+   SGD: a basic and common optimization method.
+   
+   Adam: faster descent but larger oscillation than SGD, besides using SGD can reach a smaller loss than using Adam in large data.
+   
+   Input line format: vid  label N  v1 el1   v2 el2   ...
+   
+   (separated with '\t', user's label is 0, item's label is 1, eln is score, make sure graph is undirected).
+   
+   Output line format: vid loss-value
+   
+   (separated with '\t', item's loss-value is set to zero by default).
